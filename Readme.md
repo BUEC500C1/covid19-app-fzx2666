@@ -1,5 +1,4 @@
 # Google-Map Display 
-## Copyright fzx2666@bu.edu
 
 ## Install
 This version allows google map to be shown on an Android device.
