@@ -1,14 +1,15 @@
 import React, { Component }  from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { Text, View, StyleSheet, TextInput, Dimensions, Date} from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import axios from 'axios';
+import { Container, Header, Button,Item,Input, Segment, Footer, FooterTab, Icon} from 'native-base';
 
 let { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
 // BU address
 const LATITUDE = 42.3601;
 const LONGITUDE = -71.0589;
-const LATITUDE_DELTA = 0.10;
+const LATITUDE_DELTA = 1;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 export default class FourthPage extends Component {
@@ -21,14 +22,63 @@ export default class FourthPage extends Component {
         latitudeDelta: 0.027 ,
         longitudeDelta: LONGITUDE_DELTA,
       },
+      proData: {
+        Confirmed: '',
+        Deaths: '',
+        Recovered: '',
+      },
         NewConfirmed: '',
         TotalConfirmed: '',
         NewDeaths: '',
         TotalDeaths: '',
         NewRecovered: '',
-        TotalRecovered: ''
+        TotalRecovered: '',
+        search: '',
+        Procinve: ''
     };
   }
+
+  searchRender(){
+    return(
+      <View></View>
+    );
+  }
+
+  handleSearch = (text) => {
+    
+    if(text.nativeEvent === undefined){
+      return;    
+    }
+    this.setState({
+      region:{
+        latitude: 40,
+        longitude: 40,
+        latitudeDelta: 0.1
+      },
+      search: text.nativeEvent.text});
+    axios.get('https://api.covid19api.com/dayone/country/US')
+    .then(json =>{
+      for (var i in json){
+        if(json[i].Procince === this.state.search){
+          this.setState({
+            proData: {
+              Confirmed : json[i].Confirmed,
+              Deaths:json[i].Deaths,
+              Recovered:json.Recovered
+            }
+          })
+        }
+      }
+    })
+    console.log('province',this.state.search);
+    console.log('latitude', this.state.region.latitude);
+    console.log(this.state.proData.Confirmed);
+    if(this.state.region.latitude === undefined){
+      return;
+    }
+    this.searchRender();
+  }
+
 
   componentDidMount() {
     axios.get('https://api.covid19api.com/summary')
@@ -39,54 +89,69 @@ export default class FourthPage extends Component {
       this.setState({ TotalDeaths: response.data.Global.TotalDeaths });
       this.setState({ NewRecovered:response.data.Global.NewRecovered});
       this.setState({ TotalRecovered: response.data.Global.TotalRecovered});
+
     })
-    .catch(error => {
-      console.log(error);
-    });
+    console.log("api called")
+  }
+
+  Press() {
+
   }
 
   render() {
-
-    return (
+    return(
       <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={this.state.region}
-        showsUserLocation={true}>
-      </MapView>
-
-      <View style={styles.textWindow}>
-        <Text style={styles.text}> 
-          Total Confirmed                New Confirmed {"\n"}{"\n"}                   
-          Total Deaths                      New Deaths  {"\n"}{"\n"} 
-          Total Recovered                New Recovered  {"\n"}{"\n"} 
-        </Text>
-        
-      </View>
-      <View style={styles.dataWindow}>
-        <Text style={styles.dataTotal}>
-          {this.state.TotalConfirmed}{"\n"}{"\n"}  
-          {this.state.TotalDeaths}  {"\n"}{"\n"} 
-          {this.state.TotalRecovered} {"\n"}  {"\n"}
-        </Text>
-        
-      </View>
-      <View style={styles.dataWindow}>
-        <Text style={styles.dataNew}>
-          {this.state.NewConfirmed}{"\n"}{"\n"} 
-           {this.state.NewDeaths}{"\n"} {"\n"}
-          {this.state.NewRecovered}{"\n"} {"\n"}
-        </Text>
-      </View>
-      <View style={styles.dataWindow}>
-        <Text style={styles.title}>
-          Most Recent Data of Covid-19:
-        </Text>
-      </View>
-
-      </View>
-    );
+          <MapView
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={this.state.region}
+            showsUserLocation={true}
+            onRegionChangeComplete={this.onRegionChange}>
+          
+            <MapView.Marker
+            coordinate={{ 
+              "latitude": this.state.region.latitude,   
+              "longitude": this.state.region.longitude }}
+              title={"Location"}
+              draggable/>
+          </MapView>
+  
+          <View style={styles.textWindow}>
+            <Text style={styles.text}> 
+              Total Confirmed                New Confirmed {"\n"}{"\n"}                   
+              Total Deaths                      New Deaths  {"\n"}{"\n"} 
+              Total Recovered                New Recovered  {"\n"}{"\n"} 
+            </Text>
+            
+          </View>
+          <View style={styles.dataWindow}>
+            <Text style={styles.dataTotal}>
+              {this.state.TotalConfirmed}{"\n"}{"\n"}  
+              {this.state.TotalDeaths}  {"\n"}{"\n"} 
+              {this.state.TotalRecovered} {"\n"}  {"\n"}
+            </Text>
+            
+          </View>
+          <View style={styles.dataWindow}>
+            <Text style={styles.dataNew}>
+              {this.state.NewConfirmed}{"\n"}{"\n"} 
+              {this.state.NewDeaths}{"\n"} {"\n"}
+              {this.state.NewRecovered}{"\n"} {"\n"}
+            </Text>
+          </View>
+          <View style={styles.dataWindow}>
+            <Text style={styles.title}>
+              Most Recent Data of the global:
+            </Text>
+          </View>
+          <TextInput style = {styles.input}
+            underlineColorAndroid = "transparent"
+            placeholder = "    Input Country Name to Search"
+            placeholderTextColor = "#9a73ef"
+            autoCapitalize = "none"
+            onSubmitEditing = {this.handleSearch}/>
+        </View>
+      );
   }
 }
 
@@ -132,6 +197,17 @@ const styles = StyleSheet.create({
     left: 30,
     top: 30,
     color: 'white'
+  },
+  input: {
+    margin: 15,
+    top: 270,
+    left: 1,
+    width: width-50,
+    height: 50,
+    borderColor: '#7a42f4',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderRadius: 20
   },
   dataTotal: {
     left: 62,
