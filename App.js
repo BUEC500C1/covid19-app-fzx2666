@@ -1,8 +1,8 @@
 import React, { Component }  from 'react';
-import { Text, View, StyleSheet, TextInput, Dimensions, Date} from 'react-native';
+import { Text, View, StyleSheet, TextInput, Dimensions, Date, Alert, TouchableOpacity} from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import axios from 'axios';
-import { Container, Header, Button,Item,Input, Segment, Footer, FooterTab, Icon} from 'native-base';
+import Carousel from 'react-native-snap-carousel';
 
 let { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
@@ -23,9 +23,12 @@ export default class FourthPage extends Component {
         longitudeDelta: LONGITUDE_DELTA,
       },
       proData: {
-        Confirmed: '',
-        Deaths: '',
-        Recovered: '',
+        NewConfirmed: '',
+        TotalConfirmed: '',
+        NewDeaths: '',
+        TotalDeaths: '',
+        NewRecovered: '',
+        TotalRecovered: '',
       },
         NewConfirmed: '',
         TotalConfirmed: '',
@@ -40,43 +43,53 @@ export default class FourthPage extends Component {
 
   searchRender(){
     return(
-      <View></View>
-    );
+              <View style={styles.proWindow}>
+                <Text style = {styles.text}>
+                  {this.NewConfirmed}
+                </Text>
+              </View>
+            );
   }
 
-  handleSearch = (text) => {
-    
+  handleType = (text) => {
     if(text.nativeEvent === undefined){
       return;    
     }
-    this.setState({
-      region:{
-        latitude: 40,
-        longitude: 40,
-        latitudeDelta: 0.1
-      },
-      search: text.nativeEvent.text});
-    axios.get('https://api.covid19api.com/dayone/country/US')
-    .then(json =>{
-      for (var i in json){
-        if(json[i].Procince === this.state.search){
-          this.setState({
-            proData: {
-              Confirmed : json[i].Confirmed,
-              Deaths:json[i].Deaths,
-              Recovered:json.Recovered
-            }
-          })
+    this.setState({search: text.nativeEvent.text})
+  }
+
+  handleSearch (){
+    axios.get('https://api.covid19api.com/summary')
+    .then(function (response) {
+      var i = 0;
+      var target;
+      if(response!==undefined){
+        while(response.data.Countries[i]!==undefined){
+          if (response.data.Countries[i].Country === 'Afghanistan'){
+            console.log('found!');
+            target = response.data.Countries[i];
+            console.log('changeComplete');
+            break;
+          }
+          i++;
         }
+          console.log('confirmed',this.state.TotalConfirmed);
+          this.setState({
+            region:{
+            latitude: 40,
+            longitude: 40,
+            latitudeDelta: 0.1
+            },
+            proData:{
+              TotalConfirmed: target.TotalConfirmed,
+              TotalDeaths: target.Global.TotalDeaths,
+              TotalRecovered: target.Global.TotalRecovered
+            }
+          });
+        
       }
+      
     })
-    console.log('province',this.state.search);
-    console.log('latitude', this.state.region.latitude);
-    console.log(this.state.proData.Confirmed);
-    if(this.state.region.latitude === undefined){
-      return;
-    }
-    this.searchRender();
   }
 
 
@@ -94,13 +107,11 @@ export default class FourthPage extends Component {
     console.log("api called")
   }
 
-  Press() {
-
-  }
-
   render() {
     return(
-      <View style={styles.container}>
+      <View 
+        style={styles.container}
+      >
           <MapView
             style={styles.map}
             provider={PROVIDER_GOOGLE}
@@ -124,13 +135,23 @@ export default class FourthPage extends Component {
             </Text>
             
           </View>
-          <View style={styles.dataWindow}>
+          <View style={styles.dataWindow}
+          onPress>
             <Text style={styles.dataTotal}>
               {this.state.TotalConfirmed}{"\n"}{"\n"}  
               {this.state.TotalDeaths}  {"\n"}{"\n"} 
               {this.state.TotalRecovered} {"\n"}  {"\n"}
             </Text>
             
+          </View>
+
+          <View style={styles.proWindow}>
+            <Text style={styles.title}>
+            Most Recent Data of the Country
+            </Text>
+            <Text style={styles.text2}>
+              {this.state.proData.TotalConfirmed}    {this.state.proData.TotalDeaths}     {this.state.proData.TotalRecovered} 
+            </Text>
           </View>
           <View style={styles.dataWindow}>
             <Text style={styles.dataNew}>
@@ -150,9 +171,16 @@ export default class FourthPage extends Component {
             placeholderTextColor = "#9a73ef"
             autoCapitalize = "none"
             onSubmitEditing = {this.handleSearch}/>
+          <TouchableOpacity style = {styles.touch}
+          onPress = {this.handleSearch}>
+          <Text style = {{
+            color: 'white',
+            textAlign:'center'}}>Search</Text>
+          </TouchableOpacity>
         </View>
       );
   }
+
 }
 
 const styles = StyleSheet.create({
@@ -186,6 +214,14 @@ const styles = StyleSheet.create({
     top: 50, 
     width: width,
   },
+  proWindow: {
+    position: 'absolute',
+    backgroundColor: 'rgba(52, 52, 52, 0.8)',
+    height: 60,
+    top: height-250,
+    width:width-30,
+    borderRadius: 40
+  },
   title: {
     fontWeight: 'bold',
     fontSize: 15,
@@ -198,10 +234,15 @@ const styles = StyleSheet.create({
     top: 30,
     color: 'white'
   },
+  text2: {
+    top: 15,
+    color: 'white',
+    textAlign: 'center'
+  },
   input: {
     margin: 15,
-    top: 270,
-    left: 1,
+    top: 150,
+    left: 10,
     width: width-50,
     height: 50,
     borderColor: '#7a42f4',
@@ -218,5 +259,12 @@ const styles = StyleSheet.create({
     left:width-146,
     top: 48,
     color:'white'
+  },
+  touch: {
+    position: 'absolute',
+    top: 500,
+    width:width-146,
+    backgroundColor: 'rgba(52, 52, 52, 1)',
+    borderRadius: 20
   }
 });
